@@ -1,13 +1,13 @@
 <html>
   <head>
     {% if title %}
-    <title>{{ title }} - microblog</title>
+    <title>{{ title }} - Library</title>
     {% else %}
-    <title>microblog</title>
+    <title>Library</title>
     {% endif %}
   </head>
   <body>
-    <div>Microblog: <a href="/index">Home</a></div>
+    <div>Library: <a href="/index">Home</a></div>
     <hr>
     {% with messages = get_flashed_messages() %}
     {% if messages %}
