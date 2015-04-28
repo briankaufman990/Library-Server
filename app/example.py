@@ -101,7 +101,7 @@ def home():
 @app.route('/library')
 def library():
     library = user_datastore.get_user('admin')
-    return render_template('index.html',user=library,books=library.books.all())
+    return render_template('library.html',user=library,books=library.books.all())
     
 @app.route('/admin')
 @login_required
@@ -195,7 +195,7 @@ def test():
     library = user_datastore.get_user('admin')
         
     user = user_datastore.get_user('user')
-    book = user.subquery.filter_by(1).first()
+    book = Book.query.filter_by(ISBN=2).first()
         
     book.holder = library
         
