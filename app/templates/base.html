@@ -7,7 +7,15 @@
     {% endif %}
   </head>
   <body>
-    <div>Library: <a href="/index">Home</a></div>
+    <div class=metanav>
+      <a href="{{ url_for('index') }}">Home</a>
+      {% if not logged_in %}
+        <a href="{{ url_for('login') }}">log in</a>
+      {% else %}
+        <a href="{{ url_for('logout') }}">log out</a>
+      {% endif %}
+  </div>
+
     <hr>
     {% with messages = get_flashed_messages() %}
     {% if messages %}

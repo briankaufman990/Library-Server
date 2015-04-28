@@ -90,16 +90,18 @@ def create_users():
     db.session.commit()
 
 # Views
-@app.route('/')
-@app.route('/index')
+@app.route('/profile')
 @login_required
 def home():
     user_books = current_user.books.all()
     return render_template('index.html',user=current_user,books=user_books)
     
-
-@app.route('/library')
+@app.route('/')
+@app.route('/index')
 def library():
+    logged_in = True
+    if not current_user.is_authenticated():
+        logged_in = False
     library = user_datastore.get_user('admin')
     return render_template('library.html',user=library,books=library.books.all())
     
