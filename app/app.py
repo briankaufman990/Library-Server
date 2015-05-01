@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, url_for, redirect
 from wtforms import Form, BooleanField, TextField, IntegerField, DateField, PasswordField, validators
 from flask.ext.sqlalchemy import SQLAlchemy
+import flask.ext.whooshalchemy
 from flask.ext.security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, login_required, roles_required, current_user
     
@@ -9,6 +10,7 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'super-secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
+app.config['WHOOSH_BASE'] = 'whoosh_index'
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_RECOVERABLE'] = True
 
@@ -26,6 +28,8 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
 
 class User(db.Model, UserMixin):
+    __searchable__ = ['email']  # these fields will be indexed by whoosh
+    
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
@@ -38,6 +42,8 @@ class User(db.Model, UserMixin):
                             backref=db.backref('users', lazy='dynamic'))
                             
 class Book(db.Model):
+    __searchable__ = ['title', 'author']  # these fields will be indexed by whoosh
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     title = db.Column(db.String(140))
@@ -98,15 +104,24 @@ def profile():
         return render_template('librarian.html',user=current_user,books=user_books,logged_in=True)
     
     return render_template('profile.html',user=current_user,books=user_books,logged_in=True)
+  
     
-@app.route('/')
-@app.route('/index')
+class SearchBooksForm(Form):
+    search = TextField('Title/Author', [validators.Length(min=1, max=35)])    
+  
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 def index():
     logged_in = True
     if not current_user.is_authenticated():
         logged_in = False
     library = user_datastore.get_user('admin')
-    return render_template('index.html',user=library,books=library.books.all(),logged_in=logged_in)
+    books=library.books.all()
+    
+    form = SearchBooksForm(request.form)
+    if request.method == 'POST' and form.validate():
+        books = Book.query.whoosh_search(form.search.data).all()
+    return render_template('index.html',user=library,books=books,form=form,logged_in=logged_in)
 
 class PromoteLibrarianForm(Form):
     email = TextField('Email Address', [validators.Length(min=1, max=35)])
