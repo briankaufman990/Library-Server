@@ -1,0 +1,17 @@
+<!-- extend base layout -->
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Books checked out by: {{ user.email }}</h1>
+  <hr>
+  <form action="{{ url_for('return_book') }}">
+  	{% for book in books %}
+  	  <p>
+  	  <input type="checkbox" name="books" id="{{ book.ISBN }}" value="{{ book.ISBN }}">
+  	  <label for="{{ book.ISBN }}">{{ book.title }}</br>
+  	    due: <b>{{ book.return_date }}</b></label>
+  	  </p>
+    {% endfor %}
+    <input type="submit" value="Return">
+  </form> 
+{% endblock %}

@@ -2,10 +2,9 @@
 
 {% block content %}
 {% from "_formhelpers.html" import render_field %}
-<form method=post action="/return_book">
+<form method=post action="{{ url_for('show_users_books') }}">
   <dl>
     {{ render_field(form.email) }}
-    {{ render_field(form.ISBN) }}
   </dl>
   <p><input type=submit value=Return>
 </form>

@@ -185,13 +185,27 @@ class ReturnForm(Form):
 @app.route('/return_book', methods=['GET','POST'])
 @login_required
 @roles_required('librarian')
+def show_users_books():
+    form = CheckoutForm(request.form)
+    if request.method == 'POST' and form.validate():
+        library = user_datastore.get_user('admin')
+        
+        user = user_datastore.get_user(form.email.data)
+        books = user.books.all()
+        return render_template('users_books.html',user=user,books=books,logged_in=True)
+    return render_template('return_book.html', logged_in=True)
+
+@app.route('/return_book', methods=['GET','POST'])
+@login_required
+@roles_required('librarian')
 def return_book():
     form = CheckoutForm(request.form)
     if request.method == 'POST' and form.validate():
         library = user_datastore.get_user('admin')
         
         user = user_datastore.get_user(form.email.data)
-        book = Book.query.filter_by(ISBN=form.ISBN.data).first()
+        book = user.books.all()
+        #book = Book.query.filter_by(ISBN=form.ISBN.data).first()
         
         book.holder = library
         db.session.commit()
