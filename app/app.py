@@ -3,7 +3,7 @@ from wtforms import Form, BooleanField, TextField, IntegerField, DateField, Pass
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, login_required, roles_required, current_user
-
+    
 # Create app
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -42,8 +42,8 @@ class Book(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     title = db.Column(db.String(140))
     author = db.Column(db.String(140))
-    ISBN = db.Column(db.Integer)
-    return_date = db.Column(db.DateTime)
+    ISBN = db.Column(db.String(140))
+    return_date = db.Column(db.String(140))
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -70,48 +70,46 @@ def create_users():
     user_datastore.add_role_to_user(librarian, role_librarian)
     
     
-    b = Book(title='test', author = 'me', ISBN = 1, return_date = None,holder=admin)
+    b = Book(title='test', author = 'me', ISBN = '1', return_date = None,holder=admin)
     db.session.add(b)
     
-    b = Book(title='test2', author = 'me', ISBN = 2, return_date = None,holder=user)
+    b = Book(title='test2', author = 'me', ISBN = '2', return_date = None,holder=user)
     db.session.add(b)
     
-    b = Book(title='test3', author = 'me', ISBN = 3, return_date = None,holder=admin)
+    b = Book(title='test3', author = 'me', ISBN = '3', return_date = None,holder=admin)
     db.session.add(b)
     
-    b = Book(title='test4', author = 'me', ISBN = 4, return_date = None,holder=librarian)
+    b = Book(title='test4', author = 'me', ISBN = '4', return_date = None,holder=librarian)
     db.session.add(b)
     
-    b = Book(title='test5', author = 'me', ISBN = 5, return_date = None,holder=user)
+    b = Book(title='test5', author = 'me', ISBN = '5', return_date = None,holder=user)
     db.session.add(b)
-    
-    db.session.commit()
     
     db.session.commit()
 
 # Views
+@app.route('/profile')
+@login_required
+def profile():
+    user_books = current_user.books.all()
+    if current_user.has_role('library_admin'):
+        return render_template('admin.html',user=current_user,books=user_books,logged_in=True)
+    if current_user.has_role('librarian'):
+        return render_template('librarian.html',user=current_user,books=user_books,logged_in=True)
+    
+    return render_template('profile.html',user=current_user,books=user_books,logged_in=True)
+    
 @app.route('/')
 @app.route('/index')
-@login_required
-def home():
-    user_books = current_user.books.all()
-    return render_template('index.html',user=current_user,books=user_books)
-    
-
-@app.route('/library')
-def library():
+def index():
+    logged_in = True
+    if not current_user.is_authenticated():
+        logged_in = False
     library = user_datastore.get_user('admin')
-    return render_template('library.html',user=library,books=library.books.all())
-    
-@app.route('/admin')
-@login_required
-@roles_required('library_admin')
-def admin():
-    return render_template('admin.html')
-
+    return render_template('index.html',user=library,books=library.books.all(),logged_in=logged_in)
 
 class PromoteLibrarianForm(Form):
-    email = TextField('Email Address', [validators.Length(min=6, max=35)])
+    email = TextField('Email Address', [validators.Length(min=1, max=35)])
 
 @login_required
 @roles_required('library_admin')   
@@ -123,16 +121,16 @@ def promote_librarian():
         role_librarian = user_datastore.find_or_create_role(name='librarian', description='Librarian')
         user_datastore.add_role_to_user(new_librarian, role_librarian)
         db.session.commit()
-        return url_for('admin.html')
-    return render_template('promote_librarian.html', form=form)
+        return redirect(url_for('profile'))
+    return render_template('promote_librarian.html', form=form,logged_in=True)
     
     
 class NewBookForm(Form):
-    title = TextField('Title', [validators.Length(min=6, max=35)])
-    author = TextField('Author', [validators.Length(min=6, max=35)])
-    isbn = IntegerField('ISBN', [validators.Length(min=6, max=35)])
+    title = TextField('title', [validators.Length(min=1, max=35)])
+    author = TextField('author', [validators.Length(min=1, max=35)])
+    ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
     
-@app.route('/new_book')
+@app.route('/new_book', methods=['GET','POST'])
 @login_required
 @roles_required('library_admin')
 def new_book():
@@ -141,17 +139,16 @@ def new_book():
         b = Book(title=form.title.data, author = form.author.data, ISBN = form.ISBN.data, return_date = None,holder=current_user)
         db.session.add(b)
         db.session.commit()
-        return url_for('admin.html')
-    return render_template('promote_librarian.html', form=form)
-    return render_template('new_book.html')
+        return redirect(url_for('profile'))
+    return render_template('new_book.html',form=form,logged_in=True)
     
 
 class CheckoutForm(Form):
-    email = TextField('email', [validators.Length(min=6, max=35)])
-    ISBN = IntegerField('ISBN', [validators.Length(min=6, max=35)])
-    return_date = DateField('return_date', [validators.Length(min=6, max=35)])
+    email = TextField('email', [validators.Length(min=1, max=35)])
+    ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
+    return_date = TextField('return_date', [validators.Length(min=1, max=35)])
     
-@app.route('/checkout')
+@app.route('/checkout', methods=['GET','POST'])
 @login_required
 @roles_required('librarian')
 def checkout():
@@ -163,15 +160,14 @@ def checkout():
         book.holder = user
         
         db.session.commit()
-        return url_for('index.html')
-    return render_template('promote_librarian.html', form=form)
-    return render_template('checkout.html')
+        return redirect(url_for('profile'))
+    return render_template('checkout.html',form=form,logged_in=True)
     
 class ReturnForm(Form):
-    email = TextField('email', [validators.Length(min=6, max=35)])
-    ISBN = IntegerField('ISBN', [validators.Length(min=6, max=35)])
+    email = TextField('email', [validators.Length(min=1, max=35)])
+    ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
     
-@app.route('/return_book')
+@app.route('/return_book', methods=['GET','POST'])
 @login_required
 @roles_required('librarian')
 def return_book():
@@ -183,10 +179,9 @@ def return_book():
         book = Book.query.filter_by(ISBN=form.ISBN.data).first()
         
         book.holder = library
-        
         db.session.commit()
-        return url_for('index.html')
-    return render_template('checkout.html', form=form)
+        return redirect(url_for('profile',logged_in=True))
+    return render_template('return_book.html',form=form,logged_in=True)
     
 @app.route('/test')
 @login_required
@@ -202,7 +197,7 @@ def test():
     db.session.commit()
         
     print book.holder
-    return render_template('index.html',user=library,books=library.books.all())
+    return redirect(url_for('profile',user=library,books=library.books.all(),logged_in=True))
 
 
 if __name__ == '__main__':

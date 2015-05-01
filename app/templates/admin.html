@@ -2,11 +2,13 @@
 {% extends "base.html" %}
 
 {% block content %}
- <h1>Library!</h1>
+     <h1>{{ user.email }}!</h1>
   <hr>
   {% for book in books %}
   <p>
     {{ book.title }}</br>due: <b>{{ book.return_date }}</b>
   </p>
   {% endfor %}
+  <a href="{{ url_for('promote_librarian') }}">Promote Librarian</a>
+  <a href="{{ url_for('new_book') }}">New Book</a>
 {% endblock %}

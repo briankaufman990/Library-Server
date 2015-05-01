@@ -10,9 +10,11 @@
     <div class=metanav>
       <a href="{{ url_for('index') }}">Home</a>
       {% if not logged_in %}
-        <a href="{{ url_for('login') }}">log in</a>
+        <a href="{{ url_for_security('login') }}">log in</a>
+        <a href="{{ url_for_security('register') }}">register</a>
       {% else %}
-        <a href="{{ url_for('logout') }}">log out</a>
+        <a href="{{ url_for('profile') }}">Profile</a>
+        <a href="{{ url_for_security('logout') }}">log out</a>
       {% endif %}
   </div>
 

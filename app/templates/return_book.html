@@ -2,10 +2,11 @@
 
 {% block content %}
 {% from "_formhelpers.html" import render_field %}
-<form method=post action="/promote_librarian">
+<form method=post action="/return_book">
   <dl>
     {{ render_field(form.email) }}
+    {{ render_field(form.ISBN) }}
   </dl>
-  <p><input type=submit value=Promote>
+  <p><input type=submit value=Return>
 </form>
 {% endblock %}

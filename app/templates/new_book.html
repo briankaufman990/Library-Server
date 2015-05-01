@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% from "_formhelpers.html" import render_field %}
+<form method=post action="/new_book">
+  <dl>
+    {{ render_field(form.title) }}
+    {{ render_field(form.author) }}
+    {{ render_field(form.ISBN) }}
+  </dl>
+  <p><input type=submit value=Checkout>
+</form>
+{% endblock %}
