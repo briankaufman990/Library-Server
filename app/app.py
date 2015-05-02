@@ -120,7 +120,7 @@ def index():
     
     form = SearchBooksForm(request.form)
     if request.method == 'POST' and form.validate():
-        books = Book.query.whoosh_search(form.search.data).all()
+        books = Book.query.whoosh_search('*'+form.search.data+'*').filter_by(user_id=library.id).all()
     return render_template('index.html',user=library,books=books,form=form,logged_in=logged_in)
 
 class PromoteLibrarianForm(Form):
