@@ -14,7 +14,10 @@
   <hr>
   {% for book in books %}
   <p>
-    {{ book.title }}</br>due: <b>{{ book.return_date }}</b>
+    <b>{{ book.title }}</b></br>
+    {{ book.author }}</br>
+    {{ book.ISBN }}</br>
+    due: {{ book.return_date }}</br></br>
   </p>
   {% endfor %}
 {% endblock %}

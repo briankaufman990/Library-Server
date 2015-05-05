@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, url_for, redirect
-from wtforms import Form, BooleanField, TextField, IntegerField, DateField, PasswordField, validators
+from wtforms import Form, BooleanField, TextField, IntegerField, DateField, validators
 from flask.ext.sqlalchemy import SQLAlchemy
 import flask.ext.whooshalchemy
 from flask_mail import Mail
@@ -14,6 +14,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 app.config['WHOOSH_BASE'] = 'whoosh_index'
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_RECOVERABLE'] = True
+#app.config['SECURITY_CONFIRMABLE'] = True
+app.config['SECURITY_CHANGEABLE'] = True
 #app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
 
 
@@ -60,7 +62,7 @@ class Book(db.Model):
     title = db.Column(db.String(140))
     author = db.Column(db.String(140))
     ISBN = db.Column(db.String(140))
-    return_date = db.Column(db.String(140))
+    return_date = db.Column(db.Date)
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
@@ -154,7 +156,7 @@ def promote_librarian():
 class NewBookForm(Form):
     title = TextField('title', [validators.Length(min=1, max=35)])
     author = TextField('author', [validators.Length(min=1, max=35)])
-    ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
+    ISBN = DateField('ISBN', [validators.Length(min=1, max=35)])
     
 @app.route('/new_book', methods=['GET','POST'])
 @login_required
@@ -172,7 +174,7 @@ def new_book():
 class CheckoutForm(Form):
     email = TextField('email', [validators.Length(min=1, max=35)])
     ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
-    return_date = TextField('return_date', [validators.Length(min=1, max=35)])
+    return_date = DateField('return_date', [validators.Length(min=1, max=35)])
     
 @app.route('/checkout', methods=['GET','POST'])
 @login_required
@@ -192,19 +194,6 @@ def checkout():
 class ReturnForm(Form):
     email = TextField('email', [validators.Length(min=1, max=35)])
     ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
-    
-@app.route('/return_book', methods=['GET','POST'])
-@login_required
-@roles_required('librarian')
-def show_users_books():
-    form = CheckoutForm(request.form)
-    if request.method == 'POST' and form.validate():
-        library = user_datastore.get_user('admin')
-        
-        user = user_datastore.get_user(form.email.data)
-        books = user.books.all()
-        return render_template('users_books.html',user=user,books=books,logged_in=True)
-    return render_template('return_book.html', logged_in=True)
 
 @app.route('/return_book', methods=['GET','POST'])
 @login_required
@@ -223,21 +212,18 @@ def return_book():
         return redirect(url_for('profile',logged_in=True))
     return render_template('return_book.html',form=form,logged_in=True)
     
-@app.route('/test')
+@app.route('/show_users_books', methods=['GET','POST'])
 @login_required
 @roles_required('librarian')
-def test():
-    library = user_datastore.get_user('admin')
+def show_users_books():
+    form = CheckoutForm(request.form)
+    if request.method == 'POST' and form.validate():
+        library = user_datastore.get_user('admin')
         
-    user = user_datastore.get_user('user')
-    book = Book.query.filter_by(ISBN=2).first()
-        
-    book.holder = library
-        
-    db.session.commit()
-        
-    print book.holder
-    return redirect(url_for('profile',user=library,books=library.books.all(),logged_in=True))
+        user = user_datastore.get_user(form.email.data)
+        books = user.books.all()
+        return render_template('users_books.html',user=user,books=books,logged_in=True)
+    return render_template('users_books.html', logged_in=True)
 
 
 if __name__ == '__main__':
