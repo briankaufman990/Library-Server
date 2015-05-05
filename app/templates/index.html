@@ -15,9 +15,8 @@
   {% for book in books %}
   <p>
     <b>{{ book.title }}</b></br>
-    {{ book.author }}</br>
-    {{ book.ISBN }}</br>
-    due: {{ book.return_date }}</br></br>
+    Author: {{ book.author }}</br>
+    ISBN: {{ book.ISBN }}</br>
   </p>
   {% endfor %}
 {% endblock %}

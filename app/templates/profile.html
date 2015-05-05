@@ -9,7 +9,10 @@
     <b>{{ book.title }}</b></br>
     {{ book.author }}</br>
     {{ book.ISBN }}</br>
-    due: {{ book.return_date }}</br></br>
+    {% if not book.return_date==None %}
+      Due: {{ book.return_date.strftime("%d/%m/%Y") }}
+    {% endif %}
+    </br></br>
   </p>
   {% endfor %}
 {% endblock %}

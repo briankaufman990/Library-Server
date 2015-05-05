@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, url_for, redirect
-from wtforms import Form, BooleanField, TextField, IntegerField, DateField, validators
+from wtforms import Form, BooleanField, TextField, IntegerField, validators
+from flask_wtf.html5 import DateField
 from flask.ext.sqlalchemy import SQLAlchemy
 import flask.ext.whooshalchemy
 from flask_mail import Mail
@@ -61,7 +62,7 @@ class Book(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     title = db.Column(db.String(140))
     author = db.Column(db.String(140))
-    ISBN = db.Column(db.String(140))
+    ISBN = db.Column(db.Integer)
     return_date = db.Column(db.Date)
 
 # Setup Flask-Security
@@ -89,19 +90,19 @@ def create_users():
     user_datastore.add_role_to_user(librarian, role_librarian)
     
     
-    b = Book(title='test', author = 'me', ISBN = '1', return_date = None,holder=admin)
+    b = Book(title='test', author = 'me', ISBN = 1, return_date = None,holder=admin)
     db.session.add(b)
     
-    b = Book(title='test2', author = 'me', ISBN = '2', return_date = None,holder=user)
+    b = Book(title='test2', author = 'me', ISBN = 2, return_date = None,holder=user)
     db.session.add(b)
     
-    b = Book(title='test3', author = 'me', ISBN = '3', return_date = None,holder=admin)
+    b = Book(title='test3', author = 'me', ISBN = 3, return_date = None,holder=admin)
     db.session.add(b)
     
-    b = Book(title='test4', author = 'me', ISBN = '4', return_date = None,holder=librarian)
+    b = Book(title='test4', author = 'me', ISBN = 4, return_date = None,holder=librarian)
     db.session.add(b)
     
-    b = Book(title='test5', author = 'me', ISBN = '5', return_date = None,holder=user)
+    b = Book(title='test5', author = 'me', ISBN = 5, return_date = None,holder=user)
     db.session.add(b)
     
     db.session.commit()
@@ -156,7 +157,7 @@ def promote_librarian():
 class NewBookForm(Form):
     title = TextField('title', [validators.Length(min=1, max=35)])
     author = TextField('author', [validators.Length(min=1, max=35)])
-    ISBN = DateField('ISBN', [validators.Length(min=1, max=35)])
+    ISBN = IntegerField('ISBN', [validators.Length(min=9, max=9)])
     
 @app.route('/new_book', methods=['GET','POST'])
 @login_required
@@ -174,7 +175,7 @@ def new_book():
 class CheckoutForm(Form):
     email = TextField('email', [validators.Length(min=1, max=35)])
     ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
-    return_date = DateField('return_date', [validators.Length(min=1, max=35)])
+    return_date = DateField('return_date')
     
 @app.route('/checkout', methods=['GET','POST'])
 @login_required
