@@ -2,17 +2,29 @@ from flask import Flask, render_template, request, url_for, redirect
 from wtforms import Form, BooleanField, TextField, IntegerField, DateField, PasswordField, validators
 from flask.ext.sqlalchemy import SQLAlchemy
 import flask.ext.whooshalchemy
+from flask_mail import Mail
 from flask.ext.security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, login_required, roles_required, current_user
     
 # Create app
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = 'super-secret'
+app.config['SECRET_KEY'] = 'even-more-secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 app.config['WHOOSH_BASE'] = 'whoosh_index'
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_RECOVERABLE'] = True
+#app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
+
+
+app.config['SECURITY_EMAIL_SENDER'] = 'brianhyomin@gmail.com'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+#app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = 'brianhyomin@gmail.com'
+app.config['MAIL_PASSWORD'] = 'testpass'
+mail = Mail(app)
 
 # Create database connection object
 db = SQLAlchemy(app)
