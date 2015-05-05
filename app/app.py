@@ -17,7 +17,6 @@ app.config['SECURITY_RECOVERABLE'] = True
 #app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
 
 
-app.config['SECURITY_EMAIL_SENDER'] = 'brianhyomin@gmail.com'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 #app.config['MAIL_USE_TLS'] = False
