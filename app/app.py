@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, url_for, redirect
+from os import getcwd
 from apscheduler.schedulers.background import BackgroundScheduler
+import datetime
+from flask_mail import Message
 from wtforms import Form, BooleanField, TextField, IntegerField, validators
 from flask_wtf.html5 import DateField
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -7,13 +10,15 @@ import flask.ext.whooshalchemy
 from flask_mail import Mail
 from flask.ext.security import Security, SQLAlchemyUserDatastore, \
     UserMixin, RoleMixin, login_required, roles_required, current_user
+import logging
+logging.basicConfig()
     
 # Create app
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'even-more-secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
-app.config['WHOOSH_BASE'] = 'whoosh_index'
+app.config['WHOOSH_BASE'] = getcwd()+'/whoosh_index'
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_RECOVERABLE'] = True
 #app.config['SECURITY_CONFIRMABLE'] = True
@@ -65,19 +70,61 @@ class Book(db.Model):
     author = db.Column(db.String(140))
     ISBN = db.Column(db.Integer)
     return_date = db.Column(db.Date)
+    
+flask.ext.whooshalchemy.whoosh_index(app, Book)
+flask.ext.whooshalchemy.whoosh_index(app, User)
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
 
 
-def schedule_notices():
-     t = dt.combine(dt.now() + datetime.timedelta(days=1), daily_time)
-     scheduler.enterabs(time.mktime(t.timetuple()), 1, do_something_again, ('Running again',))
+def send_notice():
+    
+    print 'sending notices'
+    print
+    
+    #sending notifications to users
+    
+    due_in_week = Book.query.filter_by(return_date= (datetime.date.today()+datetime.timedelta(days=7)) ).all()
+    for book in due_in_week:
+        print book.holder.email
+        print
+        msg = Message('Return Date Reminder', sender = 'brianhyomin@gmail.com', recipients=[book.holder.email])
+        msg.body = book.title+' is due back at the library in a week. Thank you!'
+        with app.app_context():
+            mail.send(msg)
+        
+        
+    due_tomorrow = Book.query.filter_by(return_date= (datetime.date.today()+datetime.timedelta(days=1)) ).all()
+    for book in due_tomorrow:
+        print book.holder.email
+        print
+        msg = Message('Return Date Reminder', sender = 'brianhyomin@gmail.com', recipients=[book.holder.email])
+        msg.body = book.title+' is due back at the library tomorrow. Thank you!'
+        with app.app_context():
+            mail.send(msg)
+    
+    overdue = Book.query.filter(Book.return_date < datetime.date.today()).all()
+    for book in overdue:
+        print book.holder.email
+        print
+        msg = Message('Overdue Book', sender = 'brianhyomin@gmail.com', recipients=[book.holder.email])
+        msg.body = book.title+' is overdue. Please return it!'
+        with app.app_context():
+            mail.send(msg)
+    
+    
+from apscheduler.triggers.cron import CronTrigger
 
 @app.before_first_request
-scheduler = sched.scheduler(time.time, time.sleep)
-    
+def schedule_notices():
+    sched = BackgroundScheduler()
+    sched.start()
+
+
+    trigger = CronTrigger(day_of_week='mon-sun', hour='*', minute='*', second=15)
+    sched.add_job(send_notice, trigger)
 
 
 # Views
@@ -182,6 +229,7 @@ def return_book():
         #book = Book.query.filter_by(ISBN=form.ISBN.data).first()
         
         book.holder = library
+        book.return_date = None
         db.session.commit()
         return redirect(url_for('profile',logged_in=True))
     return render_template('return_book.html',form=form,logged_in=True)

@@ -1,4 +1,5 @@
 from app import db, user_datastore, Book
+import datetime
 
 db.drop_all()
 db.create_all()
@@ -18,20 +19,28 @@ user_datastore.add_role_to_user(user, role_user)
 librarian = user_datastore.create_user(email='librarian', password='password')
 user_datastore.add_role_to_user(librarian, role_librarian)
 
+brian = user_datastore.create_user(email='brianherb1@gmail.com', password='password')
+user_datastore.add_role_to_user(user, role_user)
 
-b = Book(title='test', author = 'me', ISBN = 1, return_date = None,holder=admin)
+user_datastore.activate_user(brian)
+
+
+b = Book(title='test_day', author = 'me', ISBN = 1, return_date = datetime.date.today()+datetime.timedelta(days=1), holder=brian)
 db.session.add(b)
 
-b = Book(title='test2', author = 'me', ISBN = 2, return_date = None,holder=user)
+b = Book(title='test_week', author = 'me', ISBN = 2, return_date = datetime.date.today()+datetime.timedelta(days=7), holder=brian)
 db.session.add(b)
 
-b = Book(title='test3', author = 'me', ISBN = 3, return_date = None,holder=admin)
+b = Book(title='test_overdue', author = 'me', ISBN = 3,  return_date = datetime.date.today()-datetime.timedelta(days=7), holder=brian)
 db.session.add(b)
 
-b = Book(title='test4', author = 'me', ISBN = 4, return_date = None,holder=librarian)
+b = Book(title='test', author = 'me', ISBN = 4, return_date = None, holder=librarian)
 db.session.add(b)
 
-b = Book(title='test5', author = 'me', ISBN = 5, return_date = None,holder=user)
+b = Book(title='test2', author = 'me', ISBN = 5, return_date = None, holder=user)
+db.session.add(b)
+
+b = Book(title='test3', author = 'me', ISBN = 6, return_date = None, holder=admin)
 db.session.add(b)
 
 db.session.commit()
