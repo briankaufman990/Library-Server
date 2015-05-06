@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, url_for, redirect
+from apscheduler.schedulers.background import BackgroundScheduler
 from wtforms import Form, BooleanField, TextField, IntegerField, validators
 from flask_wtf.html5 import DateField
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -11,7 +12,7 @@ from flask.ext.security import Security, SQLAlchemyUserDatastore, \
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'even-more-secret'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
 app.config['WHOOSH_BASE'] = 'whoosh_index'
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_RECOVERABLE'] = True
@@ -68,6 +69,15 @@ class Book(db.Model):
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 security = Security(app, user_datastore)
+
+
+def schedule_notices():
+     t = dt.combine(dt.now() + datetime.timedelta(days=1), daily_time)
+     scheduler.enterabs(time.mktime(t.timetuple()), 1, do_something_again, ('Running again',))
+
+@app.before_first_request
+scheduler = sched.scheduler(time.time, time.sleep)
+    
 
 
 # Views
