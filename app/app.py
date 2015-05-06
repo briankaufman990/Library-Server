@@ -123,7 +123,7 @@ def schedule_notices():
     sched.start()
 
 
-    trigger = CronTrigger(day_of_week='mon-sun', hour='*', minute='*', second=15)
+    trigger = CronTrigger(day_of_week='*', hour=17)
     sched.add_job(send_notice, trigger)
 
 
