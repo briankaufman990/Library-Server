@@ -231,7 +231,7 @@ class ReturnForm(Form):
 @login_required
 @roles_required('librarian')
 def return_book():
-    form = CheckoutForm(request.form)
+    form = ReturnForm(request.form)
     library = user_datastore.get_user('admin')
     
     users = User.query.filter(User.email!=library.email).all()
@@ -240,7 +240,7 @@ def return_book():
     books = user.books.all()
     book = user.books.first()
     
-    finalize=True
+    finalize=False
     
     if request.method == 'POST':
         users = User.query.filter(User.email.like('%'+form.email.data+'%'),User.email!=library.email).all()
@@ -248,6 +248,8 @@ def return_book():
         books = Book.query.filter_by(user_id=user.id).all()
         book = Book.query.whoosh_search('*'+form.book.data+'*').filter_by(user_id=user.id).first()
         if form.validate() and user != None and book != None:
+            finalize = True
+            print 'test'
             if form.final.data:
                 book.return_date = None
                 book.holder = library       
