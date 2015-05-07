@@ -9,16 +9,17 @@
 
 	
 	<form method=post action="/return_book">
+
 	{% if finalize %}
-		Checkout
+			Checkout
 	    {{ render_submit_field(form.final) }}
 	{% endif %}
 	<div style="float:left; width:20%;">
-
 	  <dl>
 	    {{ render_field(form.email) }}
 	  </dl>
-	</br></br></br></br></br>
+	  </br>
+	</br></br></br></br>
 
    <p>
 	<b>Current User: {{ user.email }}</b>
@@ -38,15 +39,15 @@
 	  <dl>
 	    {{ render_field(form.book) }}
 	</br>
-
+	
 	{{ render_submit_field(form.submit) }}
 	</br>
 
-
+	
 	</br>
 	  </dl>
    <p>
-	<b>Current Book: {{ book.title }}, {{ book.author }} </br>  {{ book.ISBN }}</b>
+	<b>Current Book: {{ book.title }} </br>  {{ book.author }} </br>  {{ book.ISBN }}</b>
    </p>
  {% for b in books %}
    <p>

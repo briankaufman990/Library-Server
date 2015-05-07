@@ -223,7 +223,7 @@ def checkout():
 class ReturnForm(Form):
     email = TextField('User Email', [validators.Length(min=1, max=35)])
     book = TextField('Title/Author', [validators.Length(min=1, max=35)])
-    final = BooleanField('Return')
+    final = BooleanField('Return Book')
     submit = SubmitField('Submit')
 
 
@@ -240,7 +240,7 @@ def return_book():
     books = user.books.all()
     book = user.books.first()
     
-    finalize=False
+    finalize=True
     
     if request.method == 'POST':
         users = User.query.filter(User.email.like('%'+form.email.data+'%'),User.email!=library.email).all()
@@ -248,7 +248,6 @@ def return_book():
         books = Book.query.filter_by(user_id=user.id).all()
         book = Book.query.whoosh_search('*'+form.book.data+'*').filter_by(user_id=user.id).first()
         if form.validate() and user != None and book != None:
-            finalize = True
             if form.final.data:
                 book.return_date = None
                 book.holder = library       
