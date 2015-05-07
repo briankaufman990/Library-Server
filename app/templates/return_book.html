@@ -1,11 +1,67 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% from "_formhelpers.html" import render_field %}
-<form method=post action="{{ url_for('show_users_books') }}">
-  <dl>
-    {{ render_field(form.email) }}
-  </dl>
-  <p><input type=submit value=Return>
-</form>
+{% from "_formhelpers.html" import render_field, render_submit_field %}
+
+
+
+<div style="width:100%;">  
+
+	
+	<form method=post action="/return_book">
+	{% if finalize %}
+		Checkout
+	    {{ render_submit_field(form.final) }}
+	{% endif %}
+	<div style="float:left; width:20%;">
+
+	  <dl>
+	    {{ render_field(form.email) }}
+	  </dl>
+	</br></br></br></br></br>
+
+   <p>
+	<b>Current User: {{ user.email }}</b>
+   </p>
+
+
+ {% for u in users %}
+   <p>
+    {{ u.email }}</br>
+  </p>
+  {% endfor %}
+
+  	</br>
+	</div>
+
+	<div style="float:right; width:80%; ">
+	  <dl>
+	    {{ render_field(form.book) }}
+	</br>
+
+	{{ render_submit_field(form.submit) }}
+	</br>
+
+
+	</br>
+	  </dl>
+   <p>
+	<b>Current Book: {{ book.title }}, {{ book.author }} </br>  {{ book.ISBN }}</b>
+   </p>
+ {% for b in books %}
+   <p>
+    {{ b.title }}</br>
+  </p>
+  {% endfor %}
+
+	</div>
+	</form>
+
+</div>
+
+
+
+
+
+
 {% endblock %}

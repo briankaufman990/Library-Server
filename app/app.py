@@ -3,7 +3,7 @@ from os import getcwd
 from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 from flask_mail import Message
-from wtforms import Form, BooleanField, TextField, IntegerField, validators
+from wtforms import Form, BooleanField, TextField, IntegerField, SubmitField, BooleanField, validators
 from flask_wtf.html5 import DateField
 from flask.ext.sqlalchemy import SQLAlchemy
 import flask.ext.whooshalchemy
@@ -16,14 +16,17 @@ logging.basicConfig()
 # Create app
 app = Flask(__name__)
 app.config['DEBUG'] = True
-app.config['SECRET_KEY'] = 'even-more-secret'
+app.config['SECRET_KEY'] = 'even-more-secret-than-that'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///library.db'
 app.config['WHOOSH_BASE'] = getcwd()+'/whoosh_index'
 app.config['SECURITY_REGISTERABLE'] = True
 app.config['SECURITY_RECOVERABLE'] = True
-#app.config['SECURITY_CONFIRMABLE'] = True
+app.config['SECURITY_CONFIRMABLE'] = True
 app.config['SECURITY_CHANGEABLE'] = True
-#app.config['SECURITY_PASSWORD_HASH'] = 'bcrypt'
+app.config['SECURITY_PASSWORD_HASH'] = 'pbkdf2_sha512'
+app.config['SECURITY_PASSWORD_SALT'] = '$2a$16$Pnn(p$lIgfMagrkO@jGX4SkHqkjblBKPO'
+app.config['SECURITY_POST_LOGIN_VIEW'] = '/profile'
+
 
 
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -48,11 +51,11 @@ class Role(db.Model, RoleMixin):
     description = db.Column(db.String(255))
 
 class User(db.Model, UserMixin):
-    __searchable__ = ['email']  # these fields will be indexed by whoosh
+    __searchable__ = ['email']
     
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True)
-    password = db.Column(db.String(255))
+    email = db.Column(db.String(140), unique=True)
+    password = db.Column(db.String(140))
     active = db.Column(db.Boolean())
     confirmed_at = db.Column(db.DateTime())
     
@@ -62,7 +65,7 @@ class User(db.Model, UserMixin):
                             backref=db.backref('users', lazy='dynamic'))
                             
 class Book(db.Model):
-    __searchable__ = ['title', 'author']  # these fields will be indexed by whoosh
+    __searchable__ = ['title', 'author']
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -81,15 +84,10 @@ security = Security(app, user_datastore)
 
 def send_notice():
     
-    print 'sending notices'
-    print
-    
     #sending notifications to users
     
     due_in_week = Book.query.filter_by(return_date= (datetime.date.today()+datetime.timedelta(days=7)) ).all()
     for book in due_in_week:
-        print book.holder.email
-        print
         msg = Message('Return Date Reminder', sender = 'brianhyomin@gmail.com', recipients=[book.holder.email])
         msg.body = book.title+' is due back at the library in a week. Thank you!'
         with app.app_context():
@@ -98,8 +96,6 @@ def send_notice():
         
     due_tomorrow = Book.query.filter_by(return_date= (datetime.date.today()+datetime.timedelta(days=1)) ).all()
     for book in due_tomorrow:
-        print book.holder.email
-        print
         msg = Message('Return Date Reminder', sender = 'brianhyomin@gmail.com', recipients=[book.holder.email])
         msg.body = book.title+' is due back at the library tomorrow. Thank you!'
         with app.app_context():
@@ -107,8 +103,6 @@ def send_notice():
     
     overdue = Book.query.filter(Book.return_date < datetime.date.today()).all()
     for book in overdue:
-        print book.holder.email
-        print
         msg = Message('Overdue Book', sender = 'brianhyomin@gmail.com', recipients=[book.holder.email])
         msg.body = book.title+' is overdue. Please return it!'
         with app.app_context():
@@ -127,17 +121,15 @@ def schedule_notices():
     sched.add_job(send_notice, trigger)
 
 
+
+
+
 # Views
 @app.route('/profile')
 @login_required
 def profile():
     user_books = current_user.books.all()
-    if current_user.has_role('library_admin'):
-        return render_template('admin.html',user=current_user,books=user_books,logged_in=True)
-    if current_user.has_role('librarian'):
-        return render_template('librarian.html',user=current_user,books=user_books,logged_in=True)
-    
-    return render_template('profile.html',user=current_user,books=user_books,logged_in=True)
+    return render_template('profile.html',user=current_user,books=user_books)
   
     
 class SearchBooksForm(Form):
@@ -146,32 +138,32 @@ class SearchBooksForm(Form):
 @app.route('/', methods=['GET', 'POST'])
 @app.route('/index', methods=['GET', 'POST'])
 def index():
-    logged_in = True
-    if not current_user.is_authenticated():
-        logged_in = False
     library = user_datastore.get_user('admin')
     books=library.books.all()
-    
     form = SearchBooksForm(request.form)
     if request.method == 'POST' and form.validate():
         books = Book.query.whoosh_search('*'+form.search.data+'*').filter_by(user_id=library.id).all()
-    return render_template('index.html',user=library,books=books,form=form,logged_in=logged_in)
+    return render_template('index.html',user=library,books=books,form=form)
 
-class PromoteLibrarianForm(Form):
+class NewLibrarianForm(Form):
     email = TextField('Email Address', [validators.Length(min=1, max=35)])
+    confirm = BooleanField('Confirm Email?')
 
 @login_required
 @roles_required('library_admin')   
-@app.route('/promote_librarian', methods=['GET', 'POST'])
-def promote_librarian():
-    form = PromoteLibrarianForm(request.form)
+@app.route('/new_librarian', methods=['GET', 'POST'])
+def new_librarian():
+    form = NewLibrarianForm(request.form)
     if request.method == 'POST' and form.validate():
-        new_librarian = user_datastore.get_user(form.email.data)
+        if form.confirm.data:
+            new_librarian = user_datastore.create_user(email=form.email.data, password='password',confirmed_at=datetime.datetime.now())
+        else:
+            new_librarian = user_datastore.create_user(email=form.email.data, password='password')
         role_librarian = user_datastore.find_or_create_role(name='librarian', description='Librarian')
         user_datastore.add_role_to_user(new_librarian, role_librarian)
         db.session.commit()
         return redirect(url_for('profile'))
-    return render_template('promote_librarian.html', form=form,logged_in=True)
+    return render_template('New_librarian.html', form=form)
     
     
 class NewBookForm(Form):
@@ -189,63 +181,83 @@ def new_book():
         db.session.add(b)
         db.session.commit()
         return redirect(url_for('profile'))
-    return render_template('new_book.html',form=form,logged_in=True)
-    
+    return render_template('new_book.html',form=form)
 
 class CheckoutForm(Form):
-    email = TextField('email', [validators.Length(min=1, max=35)])
-    ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
-    return_date = DateField('return_date')
-    
+    email = TextField('User Email', [validators.Length(min=1, max=35)])
+    book = TextField('Title/Author', [validators.Length(min=1, max=35)])
+    return_date = DateField('return_date',[validators.DataRequired()])
+    final = BooleanField('Checkout')
+    submit = SubmitField('Submit')
+
+
 @app.route('/checkout', methods=['GET','POST'])
 @login_required
 @roles_required('librarian')
 def checkout():
-    form = CheckoutForm(request.form)
-    if request.method == 'POST' and form.validate():
-        user = user_datastore.get_user(form.email.data)
-        book = Book.query.filter_by(ISBN=form.ISBN.data).first()
-        book.return_date = form.return_date.data
-        book.holder = user
-        
-        db.session.commit()
-        return redirect(url_for('profile'))
-    return render_template('checkout.html',form=form,logged_in=True)
     
+    form = CheckoutForm(request.form)
+    library = user_datastore.get_user('admin')
+    finalize=False
+    books = library.books.all()
+    book = library.books.first()
+    users = User.query.filter(User.email!=library.email).all()
+    user = User.query.filter(User.email!=library.email).first()
+    if request.method == 'POST':
+        books = Book.query.whoosh_search('*'+form.book.data+'*').filter_by(user_id=library.id).all()
+        book = Book.query.whoosh_search('*'+form.book.data+'*').filter_by(user_id=library.id).first()
+        users = User.query.filter(User.email.like('%'+form.email.data+'%'),User.email!=library.email).all()
+        user = User.query.filter(User.email.like('%'+form.email.data+'%'),User.email!=library.email).first()
+        if form.validate() and user != None and book != None:
+            finalize = True
+            if form.final.data:
+                book.return_date = form.return_date.data
+                book.holder = user        
+                db.session.commit()
+                return redirect(url_for('profile'))
+        form.final.data=False
+        return render_template('checkout.html',form=form,user=user,book=book,users=users,books=books,finalize=finalize)
+    return render_template('checkout.html',form=form,user=user,book=book,users=users,books=books,finalize=finalize)
+
+
 class ReturnForm(Form):
-    email = TextField('email', [validators.Length(min=1, max=35)])
-    ISBN = TextField('ISBN', [validators.Length(min=1, max=35)])
+    email = TextField('User Email', [validators.Length(min=1, max=35)])
+    book = TextField('Title/Author', [validators.Length(min=1, max=35)])
+    final = BooleanField('Return')
+    submit = SubmitField('Submit')
+
 
 @app.route('/return_book', methods=['GET','POST'])
 @login_required
 @roles_required('librarian')
 def return_book():
     form = CheckoutForm(request.form)
-    if request.method == 'POST' and form.validate():
-        library = user_datastore.get_user('admin')
-        
-        user = user_datastore.get_user(form.email.data)
-        book = user.books.all()
-        #book = Book.query.filter_by(ISBN=form.ISBN.data).first()
-        
-        book.holder = library
-        book.return_date = None
-        db.session.commit()
-        return redirect(url_for('profile',logged_in=True))
-    return render_template('return_book.html',form=form,logged_in=True)
+    library = user_datastore.get_user('admin')
     
-@app.route('/show_users_books', methods=['GET','POST'])
-@login_required
-@roles_required('librarian')
-def show_users_books():
-    form = CheckoutForm(request.form)
-    if request.method == 'POST' and form.validate():
-        library = user_datastore.get_user('admin')
-        
-        user = user_datastore.get_user(form.email.data)
-        books = user.books.all()
-        return render_template('users_books.html',user=user,books=books,logged_in=True)
-    return render_template('users_books.html', logged_in=True)
+    users = User.query.filter(User.email!=library.email).all()
+    user = User.query.filter(User.email!=library.email).first()
+    
+    books = user.books.all()
+    book = user.books.first()
+    
+    finalize=False
+    
+    if request.method == 'POST':
+        users = User.query.filter(User.email.like('%'+form.email.data+'%'),User.email!=library.email).all()
+        user = User.query.filter(User.email.like('%'+form.email.data+'%'),User.email!=library.email).first()
+        books = Book.query.filter_by(user_id=user.id).all()
+        book = Book.query.whoosh_search('*'+form.book.data+'*').filter_by(user_id=user.id).first()
+        if form.validate() and user != None and book != None:
+            finalize = True
+            if form.final.data:
+                book.return_date = None
+                book.holder = library       
+                db.session.commit()
+                return redirect(url_for('profile'))
+        form.final.data=False
+        return render_template('return_book.html',form=form,user=user,book=book,users=users,books=books,finalize=finalize)
+    return render_template('return_book.html',form=form,user=user,book=book,users=users,books=books,finalize=finalize)
+
 
 
 if __name__ == '__main__':

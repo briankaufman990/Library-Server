@@ -1,13 +1,69 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% from "_formhelpers.html" import render_field %}
-<form method=post action="/checkout">
-  <dl>
-    {{ render_field(form.email) }}
-    {{ render_field(form.ISBN) }}
-    {{ render_field(form.return_date) }}
-  </dl>
-  <p><input type=submit value=Checkout>
-</form>
+{% from "_formhelpers.html" import render_field, render_submit_field %}
+
+
+
+<div style="width:100%;">  
+
+	
+	<form method=post action="/checkout">
+
+	{% if finalize %}
+			Checkout
+	    {{ render_submit_field(form.final) }}
+	{% endif %}
+	<div style="float:left; width:20%;">
+	  <dl>
+	    {{ render_field(form.email) }}
+	  </dl>
+	  </br>
+	</br></br></br></br>
+
+   <p>
+	<b>Current User: {{ user.email }}</b>
+   </p>
+
+
+ {% for u in users %}
+   <p>
+    {{ u.email }}</br>
+  </p>
+  {% endfor %}
+
+  	</br>
+	</div>
+
+	<div style="float:right; width:80%; ">
+	  <dl>
+	    {{ render_field(form.book) }}
+	    {{ render_field(form.return_date) }}
+	</br>
+	
+	{{ render_submit_field(form.submit) }}
+	</br>
+
+	
+	</br>
+	  </dl>
+   <p>
+	<b>Current Book: {{ book.title }} </br>  {{ book.author }} </br>  {{ book.ISBN }}</b>
+   </p>
+ {% for b in books %}
+   <p>
+    {{ b.title }}</br>
+  </p>
+  {% endfor %}
+
+	</div>
+	</form>
+
+</div>
+
+
+
+
+
+
 {% endblock %}

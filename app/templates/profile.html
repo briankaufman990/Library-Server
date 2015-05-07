@@ -2,8 +2,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-     <h1>{{ user.email }}!</h1>
+     <h1>Hello, {{ user.email }}</h1>
   <hr>
+  <h2>Checked Out Books</h2>
   {% for book in books %}
   <p>
     <b>{{ book.title }}</b></br>

@@ -9,13 +9,25 @@
   <body>
     <div class=metanav>
       <a href="{{ url_for('index') }}">Home</a>
-      {% if not logged_in %}
-        <a href="{{ url_for_security('login') }}">log in</a>
-        <a href="{{ url_for_security('register') }}">register</a>
-      {% else %}
-        <a href="{{ url_for('profile') }}">Profile</a>
-        <a href="{{ url_for_security('logout') }}">log out</a>
+      {% if 'librarian' in current_user.roles %}
+        <a href="{{ url_for('checkout') }}">Checkout</a>
+        <a href="{{ url_for('return_book') }}">Return</a>
       {% endif %}
+
+      {% if 'library_admin' in current_user.roles %}
+        <a href="{{ url_for('new_librarian') }}">New Librarian</a>
+        <a href="{{ url_for('new_book') }}">New Book</a>
+      {% endif %}
+
+      {% if current_user.is_authenticated() %}
+        <a href="{{ url_for('profile') }}">Profile</a>
+        <a href="{{ url_for_security('logout') }}">Log Out</a>
+      {% else %}
+        <a href="{{ url_for_security('login') }}">Log In</a>
+        <a href="{{ url_for_security('register') }}">Register</a>
+      {% endif %}
+
+      
   </div>
 
     <hr>

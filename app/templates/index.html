@@ -3,14 +3,13 @@
 
 {% block content %}
 {% from "_formhelpers.html" import render_field %}
-<form method=post action="/index">
+ <h1>Library Books</h1>
+ <form method=post action="/index">
   <dl>
     {{ render_field(form.search) }}
   </dl>
   <p><input type=submit value=search>
 </form>
-
- <h1>Library!</h1>
   <hr>
   {% for book in books %}
   <p>
